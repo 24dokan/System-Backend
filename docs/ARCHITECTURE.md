@@ -1,0 +1,130 @@
+# System-Backend: Architecture (Phase 1, Area 1A)
+
+Status: **DRAFT for review.** No feature code is written until this is approved.
+
+## 1. Scope
+
+Area 1A of the Phase 1 use-case diagram: products, categories, brands and features,
+the product approval workflow, CSV import/export, and seller packages.
+Areas 1B (order entry), 1C (fulfilment/returns) and 1D (inventory) come later, but the
+schema leaves room for them (SKU is the unit of stock).
+
+## 2. Decisions so far
+
+| Topic | Decision |
+|---|---|
+| Language / framework | TypeScript, NestJS |
+| Database | PostgreSQL, Prisma (schema and migrations) |
+| Structure | Modular monolith, one deployable app, strict module boundaries |
+| API | REST, documented with OpenAPI (Swagger) |
+| Auth | Email and password, JWT. Designed so 2FA can be added later |
+| Roles | `ADMIN`, `SELLER` (brand = seller), `WAREHOUSE_STAFF` |
+| Tenancy | A seller sees only its own data. Admin sees everything |
+| Media | S3-compatible object storage. Originals kept, derived sizes generated. Images and other file types (video etc.) |
+| Background jobs | BullMQ + Redis (CSV import/export, media processing) |
+| Payments | Manual for now: bank account details shown to the seller, Admin confirms receipt. Real payment gateway later |
+| Repo layout | Single NestJS app at repo root (`src/`, `prisma/`, `docs/`, `test/`) |
+
+## 3. Modules
+
+```
+src/
+  identity/       users, roles, login, JWT, password reset (2FA hook later)
+  sellers/        seller (brand) accounts, profile, admin approval of the account
+  packages/       packages, features, subscriptions, bank details, limit enforcement
+  catalog/        brands, features, categories (tree + commission)
+  products/       products, options, SKU variants, generation
+  approval/       review queue, approve/reject, edit re-approval, history
+  media/          uploads, storage, derived sizes
+  import-export/  CSV template, import with row validation, export
+  common/         guards, pipes, pagination, errors, audit helpers
+```
+
+Rules: modules talk through exported services only, never through each other's tables.
+`products` asks `packages` "may this seller add one more product?" and never reads
+subscription tables directly.
+
+## 4. Product model
+
+```
+Product ──< ProductOption ──< ProductOptionValue      (e.g. Size: S, M, L)
+   │
+   └──< Sku  (one per combination of option values; stock lives here, never on Product)
+```
+
+- A product with no options gets exactly one default SKU.
+- "Generate variations" builds the cartesian product of option values and creates the
+  missing SKUs. Existing SKUs are never deleted or recreated, so stock is not lost.
+- Stock (1D) attaches to `Sku`.
+
+## 5. Approval workflow
+
+```
+DRAFT --submit--> PENDING --approve--> APPROVED
+                     └-----reject----> REJECTED --edit & resubmit--> PENDING
+APPROVED --edit--> (live version stays visible) + pending revision --> PENDING_REVISION
+```
+
+- Imported products always start `PENDING`.
+- Rejecting requires a reason.
+- Editing an approved product creates a `ProductRevision` (a JSON snapshot of the proposed
+  changes). The live product is untouched until an Admin approves the revision,
+  then the changes are applied in one transaction.
+- Every decision is appended to `ApprovalEvent` (who, when, action, reason). Never updated or deleted.
+- `receivable` is set when a product is approved. Only approved products can be received
+  into stock (consumed by 1D).
+
+## 6. Packages and subscriptions
+
+Admin-editable data, modelled on a tiered yearly plan page.
+
+- `Package`: name, tagline, price, currency, billing period, `isContactUs` (custom
+  pricing), `isPopular`, display order, active flag.
+- Limits are typed columns, not free text: `maxProducts` (null = unlimited),
+  `maxSkus` (default 10 x `maxProducts`, null = unlimited), `maxMicroStores`,
+  `transactionFeePercent`, `pickupFeeAmount`.
+- `PackageFeature` / `PackageFeatureLink`: a list of feature labels, grouped, each marked
+  included or not per package. The comparison page renders from data.
+- `Subscription`: seller + package + status + dates.
+  `PENDING_APPROVAL -> AWAITING_PAYMENT -> ACTIVE -> EXPIRED / CANCELLED`.
+  Billing starts only after the Admin approves the seller account.
+- `PaymentInstruction`: bank name, account name, account number, reference format.
+  Shown to the seller. Admin marks a payment received, which activates the subscription
+  (`SubscriptionPayment` records who confirmed it and when).
+- **Enforcement:** products counted = status in (`PENDING`, `APPROVED`, `PENDING_REVISION`).
+  Drafts and rejected products do not count. SKUs counted the same way. Over the limit,
+  submit/import is refused with a clear error. Import checks the whole file first and
+  refuses rows past the limit.
+- Names, prices and features are seed data, not code, and are editable by Admin.
+
+## 7. Import / export
+
+- Template download, upload, background validation, per-row result report (created / rejected + reason).
+- Imported products go to `PENDING` and count toward limits.
+- Brand and category are matched by name or code. Variations are described per row
+  (one row per SKU, grouped by a product key).
+- Export streams CSV for the seller's own products. Admin can export all.
+
+## 8. Security and cross-cutting
+
+- Passwords hashed with argon2. Short-lived access token plus refresh token.
+- Role guard on every route. Tenant guard scopes every seller query by `sellerId`.
+- Audit log for admin actions. Uploads validated by type and size.
+- Money stored as integer minor units (sen / cents), never floats.
+
+## 9. Open items
+
+- 2FA method (TOTP vs SMS vs email). Later.
+- Real payment gateway. Later. Manual bank transfer for now.
+- Storefront (phase 6/7) will read approved products and media from this API.
+- Category commission rules: percentage only for now.
+
+## 10. Build order after approval
+
+1. Project scaffold, config, Docker Compose (Postgres, Redis, MinIO), CI
+2. identity + sellers
+3. catalog (brands, features, categories)
+4. packages and subscriptions
+5. products, options, SKUs, media
+6. approval workflow
+7. import / export
