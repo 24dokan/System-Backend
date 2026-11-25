@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { SellerStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SubscriptionsService } from '../packages/subscriptions.service';
 
 @Injectable()
 export class SellersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private subscriptions: SubscriptionsService) {}
 
   list(status?: SellerStatus) {
     return this.prisma.seller.findMany({ where: { status }, orderBy: { createdAt: 'desc' } });
@@ -23,6 +24,9 @@ export class SellersService {
   async setStatus(id: string, status: SellerStatus) {
     const seller = await this.get(id);
     if (seller.status === status) throw new BadRequestException(`Seller already ${status}`);
-    return this.prisma.seller.update({ where: { id }, data: { status } });
+    const updated = await this.prisma.seller.update({ where: { id }, data: { status } });
+    // Billing starts only after the Admin approves the account.
+    if (status === 'APPROVED') await this.subscriptions.onSellerApproved(id);
+    return updated;
   }
 }
