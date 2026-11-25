@@ -14,10 +14,15 @@ export class ImportExportService {
   constructor(private prisma: PrismaService, private limits: LimitsService) {}
 
   template() {
+    // Build each row by column name so the cells always line up with the header.
+    const line = (v: Record<string, string>) => COLUMNS.map((c) => v[c] ?? '');
     return toCsv(COLUMNS, [
-      ['TSHIRT-1', 'Basic T-Shirt', 'Soft cotton tee', 'Men Fashion > Men Clothing', 'Size', 'S', 'Colour', 'Black', '', '', '', '', '', '', '', '', 'TSHIRT-S-BLK', '29.90'],
-      ['TSHIRT-1', '', '', '', '', 'M', '', 'Black', '', '', '', '', '', '', '', '', '', '29.90'],
-      ['MUG-1', 'Ceramic Mug', '', 'Home & Living > Kitchen & Dining', '', '', '', '', '', '', '', '', '', '', '', '', '', '15.00'],
+      line({
+        product_key: 'TSHIRT-1', name: 'Basic T-Shirt', description: 'Soft cotton tee', category: 'Men Fashion > Men Clothing',
+        option1_name: 'Size', option1_value: 'S', option2_name: 'Colour', option2_value: 'Black', sku_code: 'TSHIRT-S-BLK', price: '29.90',
+      }),
+      line({ product_key: 'TSHIRT-1', option1_value: 'M', option2_value: 'Black', price: '29.90' }),
+      line({ product_key: 'MUG-1', name: 'Ceramic Mug', category: 'Home & Living > Kitchen & Dining', price: '15.00' }),
     ]);
   }
 
