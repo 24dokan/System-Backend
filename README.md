@@ -9,7 +9,7 @@ Design: see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ```bash
 cp .env.example .env
-docker compose up -d        # Postgres, Redis, MinIO
+docker compose up -d        # Postgres, Redis (media storage comes later)
 npm install
 npx prisma migrate dev
 npm run start:dev           # http://localhost:3000/api/health
