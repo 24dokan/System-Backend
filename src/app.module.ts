@@ -8,6 +8,7 @@ import { SellersModule } from './sellers/sellers.module';
 import { PackagesModule } from './packages/packages.module';
 import { ProductsModule } from './products/products.module';
 import { MediaModule } from './media/media.module';
+import { ApprovalModule } from './approval/approval.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { JwtAuthGuard } from './common/jwt-auth.guard';
 import { RolesGuard } from './common/roles.guard';
@@ -23,6 +24,7 @@ import { RolesGuard } from './common/roles.guard';
     PackagesModule,
     ProductsModule,
     MediaModule,
+    ApprovalModule,
   ],
   providers: [
     // Order matters: authenticate first, then check roles.
