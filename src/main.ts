@@ -16,6 +16,7 @@ async function bootstrap() {
     .addSecurityRequirements('bearer') // send the token on every request from /docs
     .build();
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
-  await app.listen(process.env.PORT ?? 3000);
+  // Listen on IPv4 explicitly. On some Windows setups the default is IPv6 only, which other local programs cannot reach.
+  await app.listen(process.env.PORT ?? 3000, process.env.HOST ?? '0.0.0.0');
 }
 bootstrap();
