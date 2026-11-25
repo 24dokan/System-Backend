@@ -16,6 +16,10 @@ export class SellersService {
     return seller;
   }
 
+  updateProfile(id: string, data: { name?: string; logoMediaId?: string }) {
+    return this.prisma.seller.update({ where: { id }, data });
+  }
+
   async setStatus(id: string, status: SellerStatus) {
     const seller = await this.get(id);
     if (seller.status === status) throw new BadRequestException(`Seller already ${status}`);

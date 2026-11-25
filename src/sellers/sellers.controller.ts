@@ -1,7 +1,8 @@
-import { Controller, Get, Param, ParseEnumPipe, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Param, ParseEnumPipe, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { SellerStatus } from '@prisma/client';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
 import { Roles } from '../common/roles.decorator';
+import { UpdateBrandProfileDto } from '../catalog/dto/catalog.dto';
 import { SellersService } from './sellers.service';
 
 @Controller('sellers')
@@ -12,6 +13,12 @@ export class SellersController {
   @Roles('SELLER') @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.sellers.get(user.sellerId!);
+  }
+
+  /** A seller edits its own brand profile. */
+  @Roles('SELLER') @Patch('me')
+  updateMe(@CurrentUser() user: AuthUser, @Body() dto: UpdateBrandProfileDto) {
+    return this.sellers.updateProfile(user.sellerId!, dto);
   }
 
   @Roles('ADMIN') @Get()
