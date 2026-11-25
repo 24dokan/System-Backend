@@ -15,6 +15,9 @@ npx prisma migrate dev
 npm run start:dev           # http://localhost:3000/api/health
 ```
 
+## Web UI
+Seller portal and admin panel live in [web/](web/README.md). Run it with `cd web && npm install && npm run dev`, then open http://localhost:3001.
+
 ## Scripts
 `npm run build` · `npm test` · `npm run lint` · `npm run prisma:validate`
 
