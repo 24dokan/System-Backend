@@ -286,6 +286,7 @@ model Media {
   storageKey  String    // original, never overwritten
   mimeType    String
   sizeBytes   Int
+  uploaded    Boolean   @default(false) // true once the file is confirmed in storage
   derivatives Json?     // generated sizes: { "thumb": key, "medium": key, ... }
   createdAt   DateTime  @default(now())
 
