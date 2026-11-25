@@ -24,7 +24,7 @@ export class ApprovalService {
    */
   private async transition(
     tx: Tx, productId: string, action: Transition, event: ApprovalAction, actorId: string,
-    from: string, extra: Prisma.ProductUpdateManyMutationInput = {}, reason?: string,
+    from: string, extra: Prisma.ProductUncheckedUpdateManyInput = {}, reason?: string,
   ) {
     const to = nextStatus(from as never, action);
     if (!to) throw new ConflictException(`Cannot ${action.toLowerCase().replace('_', ' ')} a product that is ${from}`);
@@ -124,7 +124,7 @@ export class ApprovalService {
       await this.transition(tx, rev.productId, 'REVISION_APPROVE', 'REVISION_APPROVE', admin.id, rev.product.status, {
         ...(c.name ? { name: c.name } : {}),
         ...(c.description !== undefined ? { description: c.description } : {}),
-        ...(c.categoryId ? { category: { connect: { id: c.categoryId } } } : {}),
+        ...(c.categoryId ? { categoryId: c.categoryId } : {}),
       });
       for (const s of c.skus ?? []) {
         await tx.sku.updateMany({ where: { id: s.skuId, productId: rev.productId }, data: { priceMinor: s.priceMinor, isActive: s.isActive } });
