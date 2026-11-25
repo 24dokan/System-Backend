@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { AuthPage } from '@/components/AuthForm';
+import DevQuickLogin from '@/components/DevQuickLogin';
 import { Field, useAction } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 
@@ -25,6 +26,7 @@ export default function Login() {
         <Field label="Password"><input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
         <button className="btn-primary w-full" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
       </form>
+      <DevQuickLogin />
     </AuthPage>
   );
 }
