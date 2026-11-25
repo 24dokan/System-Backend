@@ -15,7 +15,6 @@ async function main() {
   console.log(`Admin ready: ${email}`);
 }
 
-main().finally(() => prisma.$disconnect());
 
 // ---- placeholder packages (Admin can edit all of this afterwards) ----
 async function seedPackages() {
@@ -31,4 +30,10 @@ async function seedPackages() {
   }
   console.log('Packages ready');
 }
-seedPackages().finally(() => prisma.$disconnect());
+main()
+  .then(seedPackages)
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => prisma.$disconnect());
