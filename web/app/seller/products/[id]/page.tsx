@@ -3,6 +3,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { date, flattenCategories, fromMinor, money, toMinor } from '@/lib/format';
+import ProductMedia from '@/components/ProductMedia';
 import { Card, Empty, Field, Modal, PageHeader, Spinner, StatusBadge, useAction, useLoad } from '@/components/ui';
 
 const ACTION_LABEL: Record<string, string> = {
@@ -44,6 +45,7 @@ export default function ProductPage() {
 
       <div className="space-y-5">
         <Details p={p} editable={editable} tree={cats.data} onSaved={refresh} />
+        <ProductMedia p={p} editable={editable} onSaved={refresh} />
         <Options p={p} editable={editable} onSaved={refresh} />
         <Skus p={p} editable={editable} onSaved={refresh} />
         <Card title="History">

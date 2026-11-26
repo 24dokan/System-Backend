@@ -121,10 +121,19 @@ Admin-editable data, modelled on a tiered yearly plan page.
 
 ## 10. Build order after approval
 
-1. Project scaffold, config, Docker Compose (Postgres, Redis, MinIO), CI
+1. Project scaffold, config, Docker Compose (Postgres, Redis), CI
 2. identity + sellers
 3. catalog (brands, features, categories)
 4. packages and subscriptions
 5. products, options, SKUs, media
 6. approval workflow
 7. import / export
+
+## File storage
+
+All uploads go through one `StorageService` contract with two drivers, chosen by `STORAGE_DRIVER`:
+
+- `local` (default): files are saved in `STORAGE_LOCAL_DIR` (default `./storage`, git-ignored). Upload and download links are signed and expire, exactly like cloud links, so the rest of the app is identical.
+- `s3`: any S3-compatible service (AWS S3, Cloudflare R2, Backblaze B2). Set `S3_ENDPOINT` (not needed for AWS), `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION`.
+
+Moving to the cloud is a configuration change. Files already saved locally must be copied to the bucket under the same keys (the `Media.storageKey` column). The bucket also needs a CORS rule allowing `PUT` and `GET` from the web app's address.

@@ -20,8 +20,8 @@ export class MediaService {
     const media = await this.prisma.media.create({
       data: { sellerId: user.sellerId!, kind: ALLOWED[dto.mimeType].kind, storageKey, mimeType: dto.mimeType, sizeBytes: dto.sizeBytes },
     });
-    const uploadUrl = await this.storage.presignUpload(storageKey, dto.mimeType, dto.sizeBytes);
-    return { id: media.id, uploadUrl, expiresInSeconds: 600 };
+    const target = await this.storage.presignUpload(storageKey, dto.mimeType, dto.sizeBytes);
+    return { id: media.id, uploadUrl: target.url, method: target.method, headers: target.headers, expiresInSeconds: 600 };
   }
 
   /** Step 2: after uploading, the client confirms. We check the file really arrived at the declared size. */
