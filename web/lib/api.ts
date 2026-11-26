@@ -34,7 +34,11 @@ async function send(path: string, opts: { method?: string; body?: unknown; form?
   let body: BodyInit | undefined;
   if (opts.form) body = opts.form;
   else if (opts.body !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(opts.body); }
-  return fetch(path, { method: opts.method ?? (body ? 'POST' : 'GET'), headers, body });
+  try {
+    return await fetch(path, { method: opts.method ?? (body ? 'POST' : 'GET'), headers, body });
+  } catch {
+    throw new ApiError('Cannot reach the web server. Is "npm run dev" still running in the web folder?', 0);
+  }
 }
 
 async function request(path: string, opts: { method?: string; body?: unknown; form?: FormData } = {}) {
@@ -45,7 +49,9 @@ async function request(path: string, opts: { method?: string; body?: unknown; fo
     if (typeof window !== 'undefined') window.location.href = '/login';
   }
   if (!res.ok) {
-    let msg = `Request failed (${res.status})`;
+    let msg = res.status >= 500
+      ? `The backend did not answer (${res.status}). Make sure it is running on port 3000 (npm run start:dev in the main folder).`
+      : `Request failed (${res.status})`;
     try {
       const j = await res.json();
       msg = Array.isArray(j.message) ? j.message.join('. ') : j.message || msg;

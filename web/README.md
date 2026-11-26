@@ -1,7 +1,7 @@
 # Web (seller portal + admin panel)
 
 Next.js (App Router) + Tailwind. It talks to the backend through `/api/*`, which Next.js forwards to
-`API_URL` (default `http://localhost:3000`), so no CORS setup is needed.
+`API_URL` (default `http://127.0.0.1:3000`), so no CORS setup is needed.
 
 ## Run locally
 
@@ -13,6 +13,8 @@ cp .env.example .env     # only needed if the backend is not on localhost:3000
 npm install
 npm run dev              # http://localhost:3001
 ```
+
+Log in and registration are switched off for now: /login shows two buttons that open an existing admin or seller account.
 
 ## Screens
 
