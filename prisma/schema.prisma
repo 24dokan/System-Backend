@@ -69,6 +69,8 @@ model Seller {
   updatedAt DateTime     @updatedAt
 
   profile       SellerProfile?
+  orders        Order[]
+  inbound       InboundShipment[]
   users         User[]
   products      Product[]
   subscriptions Subscription[]
@@ -335,10 +337,17 @@ model Sku {
   code       String   @unique
   priceMinor Int
   isActive   Boolean  @default(true)
+  lowStockLevel Int     @default(10) // alert when sellable stock falls to this number
   createdAt  DateTime @default(now())
 
   product Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
   values  SkuOptionValue[]
+  stockLevels StockLevel[]
+  movements   StockMovement[]
+  orderItems  OrderItem[]
+  returns     ReturnRecord[]
+  inboundLines InboundLine[]
+  marketplaceSync MarketplaceSync?
 
   @@index([productId])
 }
@@ -464,4 +473,263 @@ model ApprovalEvent {
   product Product @relation(fields: [productId], references: [id])
 
   @@index([productId, createdAt])
+}
+
+// ---------- inventory (1D) ----------
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  code      String   @unique // short name used in labels, e.g. KL
+  name      String
+  address   String?
+  city      String?
+  contact   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  stock    StockLevel[]
+  inbound  InboundShipment[]
+  orders   Order[]
+  returns  ReturnRecord[]
+}
+
+/// Stock of one variation in one warehouse on one shelf. location "" means no shelf recorded.
+/// Sellable stock = onHand - reserved. Reserved is promised to open orders. Quarantine (damaged) and
+/// inspection (returned, not yet checked) are counted separately and are never sellable.
+model StockLevel {
+  id          String @id @default(uuid())
+  skuId       String
+  warehouseId String
+  location    String @default("")
+  onHand      Int    @default(0)
+  reserved    Int    @default(0)
+  quarantine  Int    @default(0)
+  inspection  Int    @default(0)
+  updatedAt   DateTime @updatedAt
+
+  sku         Sku        @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse  @relation(fields: [warehouseId], references: [id])
+  allocations StockAllocation[]
+
+  @@unique([skuId, warehouseId, location])
+  @@index([warehouseId])
+}
+
+enum MovementType {
+  RECEIVED
+  RESERVED
+  RELEASED
+  SHIPPED
+  RETURNED
+  RESTOCKED
+  DAMAGED
+  ADJUSTED
+}
+
+/// Append-only history. Every change to a StockLevel writes one row.
+model StockMovement {
+  id            String       @id @default(uuid())
+  skuId         String
+  warehouseId   String
+  location      String       @default("")
+  type          MovementType
+  onHandDelta   Int          @default(0)
+  reservedDelta Int          @default(0)
+  quarantineDelta Int        @default(0)
+  inspectionDelta Int        @default(0)
+  onHandAfter   Int
+  refLabel      String? // e.g. IN-0412, #10482, R-2031
+  note          String?
+  userId        String?
+  createdAt     DateTime     @default(now())
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId, createdAt])
+  @@index([createdAt])
+}
+
+enum InboundStatus {
+  EXPECTED
+  RECEIVED
+  CANCELLED
+}
+
+model InboundShipment {
+  id           String        @id @default(uuid())
+  code         String        @unique // IN-0412
+  sellerId     String
+  warehouseId  String
+  expectedDate DateTime
+  status       InboundStatus @default(EXPECTED)
+  note         String?
+  receivedAt   DateTime?
+  createdById  String
+  createdAt    DateTime      @default(now())
+
+  seller    Seller        @relation(fields: [sellerId], references: [id])
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id])
+  lines     InboundLine[]
+
+  @@index([status, expectedDate])
+}
+
+model InboundLine {
+  id          String  @id @default(uuid())
+  shipmentId  String
+  skuId       String
+  expectedQty Int
+  receivedQty Int?
+  damagedQty  Int?
+  location    String?
+
+  shipment InboundShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  sku      Sku             @relation(fields: [skuId], references: [id])
+
+  @@unique([shipmentId, skuId])
+}
+
+/// What was last told to the marketplaces for each variation. Differences become the "marketplace updates" list.
+model MarketplaceSync {
+  skuId     String   @id
+  syncedQty Int
+  syncedAt  DateTime @default(now())
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+}
+
+/// Running numbers for readable codes (orders, shipments, returns).
+model Counter {
+  name  String @id
+  value Int
+}
+
+// ---------- orders (1B) and fulfilment (1C) ----------
+
+enum OrderSource {
+  SHOPEE
+  LAZADA
+  TIKTOK
+  STOREFRONT
+  OTHER
+}
+
+enum OrderStatus {
+  TO_PACK
+  PACKED
+  WAITING_PICKUP
+  SHIPPED
+  CANCELLED
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  number        Int         @unique // shown as #10482
+  source        OrderSource
+  externalRef   String? // the marketplace's own order number
+  sellerId      String
+  warehouseId   String
+  status        OrderStatus @default(TO_PACK)
+  customerName  String
+  customerPhone String?
+  address       String
+  itemsMinor    Int
+  shippingMinor Int         @default(0)
+  discountMinor Int         @default(0)
+  totalMinor    Int
+  currency      String      @default("MYR")
+  note          String?
+  cancelReason  String?
+  placedAt      DateTime    @default(now())
+  packedAt      DateTime?
+  shippedAt     DateTime?
+  cancelledAt   DateTime?
+  createdById   String
+  createdAt     DateTime    @default(now())
+
+  seller    Seller       @relation(fields: [sellerId], references: [id])
+  warehouse Warehouse    @relation(fields: [warehouseId], references: [id])
+  items     OrderItem[]
+  events    OrderEvent[]
+  returns   ReturnRecord[]
+
+  @@unique([source, externalRef])
+  @@index([status, createdAt])
+  @@index([sellerId, createdAt])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id             String @id @default(uuid())
+  orderId        String
+  skuId          String
+  productName    String // copied at order time so history stays correct
+  variationLabel String
+  skuCode        String
+  qty            Int
+  unitPriceMinor Int
+
+  order       Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sku         Sku               @relation(fields: [skuId], references: [id])
+  allocations StockAllocation[]
+  returns     ReturnRecord[]
+
+  @@index([orderId])
+}
+
+/// Which shelf row the stock for an order line was set aside from. Used for the pick list.
+model StockAllocation {
+  id           String @id @default(uuid())
+  orderItemId  String
+  stockLevelId String
+  qty          Int
+
+  orderItem  OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  stockLevel StockLevel @relation(fields: [stockLevelId], references: [id])
+
+  @@index([orderItemId])
+}
+
+model OrderEvent {
+  id        String   @id @default(uuid())
+  orderId   String
+  action    String // CREATED, PACKED, READY_FOR_PICKUP, SHIPPED, CANCELLED
+  note      String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+enum ReturnStatus {
+  TO_INSPECT
+  SELLER_CHECK
+  RESTOCKED
+  DAMAGED
+}
+
+model ReturnRecord {
+  id            String       @id @default(uuid())
+  code          String       @unique // R-2031
+  orderId       String?
+  orderItemId   String?
+  skuId         String
+  warehouseId   String
+  qty           Int
+  reason        String?
+  status        ReturnStatus @default(TO_INSPECT)
+  inspectionNote String?
+  receivedAt    DateTime     @default(now())
+  inspectedAt   DateTime?
+  inspectedById String?
+  createdById   String
+
+  order     Order?     @relation(fields: [orderId], references: [id])
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
+  sku       Sku        @relation(fields: [skuId], references: [id])
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id])
+
+  @@index([status])
 }
