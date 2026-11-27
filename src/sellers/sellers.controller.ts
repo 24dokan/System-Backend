@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Patch, Param, ParseEnumPipe, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { SellerStatus } from '@prisma/client';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
-import { Roles } from '../common/roles.decorator';
+import { Roles, Permission } from '../common/roles.decorator';
 import { UpdateBrandProfileDto } from '../catalog/dto/catalog.dto';
 import { SellersService } from './sellers.service';
 
@@ -21,17 +21,17 @@ export class SellersController {
     return this.sellers.updateProfile(user.sellerId!, dto);
   }
 
-  @Roles('ADMIN') @Get()
+  @Permission('sellers.view') @Get()
   list(@Query('status', new ParseEnumPipe(SellerStatus, { optional: true })) status?: SellerStatus) {
     return this.sellers.list(status);
   }
 
-  @Roles('ADMIN') @Post(':id/approve')
+  @Permission('sellers.approve') @Post(':id/approve')
   approve(@Param('id', ParseUUIDPipe) id: string) {
     return this.sellers.setStatus(id, 'APPROVED');
   }
 
-  @Roles('ADMIN') @Post(':id/suspend')
+  @Permission('sellers.suspend') @Post(':id/suspend')
   suspend(@Param('id', ParseUUIDPipe) id: string) {
     return this.sellers.setStatus(id, 'SUSPENDED');
   }

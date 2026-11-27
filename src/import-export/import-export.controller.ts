@@ -3,14 +3,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
-import { Roles } from '../common/roles.decorator';
+import { Roles, AdminPermission } from '../common/roles.decorator';
 import { ImportExportService } from './import-export.service';
 
 @Controller('import-export')
 export class ImportExportController {
   constructor(private svc: ImportExportService) {}
 
-  @Roles('SELLER', 'ADMIN') @Get('template.csv')
+  @Roles('SELLER', 'ADMIN') @AdminPermission('products.view') @Get('template.csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="products-template.csv"')
   template() { return this.svc.template(); }
@@ -22,7 +22,7 @@ export class ImportExportController {
     return this.svc.importProducts(u, file.buffer);
   }
 
-  @Roles('SELLER', 'ADMIN') @Get('products.csv')
+  @Roles('SELLER', 'ADMIN') @AdminPermission('products.view') @Get('products.csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="products.csv"')
   export(@CurrentUser() u: AuthUser, @Query('sellerId', new ParseUUIDPipe({ optional: true })) sellerId?: string) {

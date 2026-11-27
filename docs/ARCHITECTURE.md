@@ -137,3 +137,12 @@ All uploads go through one `StorageService` contract with two drivers, chosen by
 - `s3`: any S3-compatible service (AWS S3, Cloudflare R2, Backblaze B2). Set `S3_ENDPOINT` (not needed for AWS), `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION`.
 
 Moving to the cloud is a configuration change. Files already saved locally must be copied to the bucket under the same keys (the `Media.storageKey` column). The bucket also needs a CORS rule allowing `PUT` and `GET` from the web app's address.
+
+## Staff, roles and permissions
+
+- Every admin action has a permission key, listed in one place: `src/permissions/permissions.ts`. Routes declare what they need with `@Permission('key')` (admin-only routes) or `@AdminPermission('key')` (routes shared with sellers, where the check applies to administrators only).
+- A **role** is a named set of keys (table `StaffRole`). A staff member is an `ADMIN` user with a role. An `ADMIN` user with **no role is a super admin** and may do everything, so the seeded admin keeps full access.
+- Permissions are read from the database on every guarded request, so removing a permission or switching an account off takes effect immediately, even while a login token is still valid.
+- Nobody can hand out a permission they do not hold themselves, and only a super admin can change another super admin. This stops staff from promoting themselves.
+- `GET /api/auth/me` returns `permissions` and `superAdmin` so the web app can hide screens. The backend enforces the same rules regardless.
+- Planned: a seller's ID number and bank details are only shown in full to roles with `sellers.view_sensitive` (arrives with the store profile).

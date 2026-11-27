@@ -25,6 +25,6 @@ export class AuthController {
 
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
-    return user;
+    return this.auth.me(user);
   }
 }

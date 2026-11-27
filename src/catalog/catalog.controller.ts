@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
-import { Roles } from '../common/roles.decorator';
+import { Permission } from '../common/roles.decorator';
 import { CategoriesService } from './categories.service';
 import { FeaturesService } from './features.service';
 import { CreateCategoryDto, FeatureDto, UpdateCategoryDto } from './dto/catalog.dto';
@@ -10,8 +10,8 @@ export class FeaturesController {
   constructor(private features: FeaturesService) {}
 
   @Get() list() { return this.features.list(); }
-  @Roles('ADMIN') @Post() create(@Body() dto: FeatureDto) { return this.features.create(dto.name); }
-  @Roles('ADMIN') @Patch(':id')
+  @Permission('features.manage') @Post() create(@Body() dto: FeatureDto) { return this.features.create(dto.name); }
+  @Permission('features.manage') @Patch(':id')
   rename(@Param('id', ParseUUIDPipe) id: string, @Body() dto: FeatureDto) {
     return this.features.rename(id, dto.name);
   }
@@ -24,8 +24,8 @@ export class CategoriesController {
   @Get() tree(@Query('includeInactive') includeInactive?: string) {
     return this.categories.tree(includeInactive === 'true');
   }
-  @Roles('ADMIN') @Post() create(@Body() dto: CreateCategoryDto) { return this.categories.create(dto); }
-  @Roles('ADMIN') @Patch(':id')
+  @Permission('categories.manage') @Post() create(@Body() dto: CreateCategoryDto) { return this.categories.create(dto); }
+  @Permission('categories.manage') @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCategoryDto) {
     return this.categories.update(id, dto);
   }

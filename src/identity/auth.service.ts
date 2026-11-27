@@ -5,6 +5,8 @@ import { User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugify } from '../common/slugify';
+import { PermissionsService } from '../permissions/permissions.service';
+import { AuthUser } from '../common/current-user.decorator';
 import { LoginDto, RegisterSellerDto } from './dto/auth.dto';
 
 @Injectable()
@@ -13,7 +15,22 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private perms: PermissionsService,
   ) {}
+
+  /** Who is logged in, including what an administrator or staff member is allowed to do (for hiding screens). */
+  async me(user: AuthUser) {
+    const row = await this.prisma.user.findUnique({ where: { id: user.id }, include: { staffRole: true } });
+    const access = user.role === 'ADMIN' ? await this.perms.accessFor(user.id) : null;
+    return {
+      ...user,
+      email: row?.email,
+      name: row?.name ?? null,
+      staffRole: row?.staffRole?.name ?? null,
+      superAdmin: access?.superAdmin ?? false,
+      permissions: access?.permissions ?? [],
+    };
+  }
 
   async registerSeller(dto: RegisterSellerDto) {
     const email = dto.email.toLowerCase();

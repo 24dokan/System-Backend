@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseEnumPipe, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { SubscriptionStatus } from '@prisma/client';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
-import { Public, Roles } from '../common/roles.decorator';
+import { Public, Roles, Permission } from '../common/roles.decorator';
 import {
   AdminAssignDto, ConfirmPaymentDto, CreatePackageDto, PackageFeatureDto, PaymentInstructionDto,
   SetPackageFeaturesDto, SubscribeDto, UpdatePackageDto,
@@ -15,11 +15,11 @@ export class PackagesController {
   constructor(private packages: PackagesService) {}
 
   @Public() @Get() list() { return this.packages.listActive(); }
-  @Roles('ADMIN') @Get('all') listAll() { return this.packages.listAll(); }
-  @Roles('ADMIN') @Post() create(@Body() dto: CreatePackageDto) { return this.packages.create(dto); }
-  @Roles('ADMIN') @Patch(':id')
+  @Permission('packages.manage') @Get('all') listAll() { return this.packages.listAll(); }
+  @Permission('packages.manage') @Post() create(@Body() dto: CreatePackageDto) { return this.packages.create(dto); }
+  @Permission('packages.manage') @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePackageDto) { return this.packages.update(id, dto); }
-  @Roles('ADMIN') @Put(':id/features')
+  @Permission('packages.manage') @Put(':id/features')
   setFeatures(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetPackageFeaturesDto) {
     return this.packages.setPackageFeatures(id, dto);
   }
@@ -29,9 +29,9 @@ export class PackagesController {
 export class PackageFeaturesController {
   constructor(private packages: PackagesService) {}
 
-  @Roles('ADMIN') @Get() list() { return this.packages.listFeatures(); }
-  @Roles('ADMIN') @Post() create(@Body() dto: PackageFeatureDto) { return this.packages.createFeature(dto); }
-  @Roles('ADMIN') @Patch(':id')
+  @Permission('packages.manage') @Get() list() { return this.packages.listFeatures(); }
+  @Permission('packages.manage') @Post() create(@Body() dto: PackageFeatureDto) { return this.packages.createFeature(dto); }
+  @Permission('packages.manage') @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: PackageFeatureDto) { return this.packages.updateFeature(id, dto); }
 }
 
@@ -40,7 +40,7 @@ export class PaymentInstructionController {
   constructor(private packages: PackagesService) {}
 
   @Roles('ADMIN', 'SELLER') @Get() get() { return this.packages.getPaymentInstruction(); }
-  @Roles('ADMIN') @Put() set(@Body() dto: PaymentInstructionDto) { return this.packages.setPaymentInstruction(dto); }
+  @Permission('bank.manage') @Put() set(@Body() dto: PaymentInstructionDto) { return this.packages.setPaymentInstruction(dto); }
 }
 
 @Controller('subscriptions')
@@ -54,16 +54,16 @@ export class SubscriptionsController {
   @Roles('SELLER') @Get('usage') usage(@CurrentUser() u: AuthUser) { return this.limits.summary(u.sellerId!); }
 
   // Admin
-  @Roles('ADMIN') @Get()
+  @Permission('payments.view') @Get()
   all(@Query('status', new ParseEnumPipe(SubscriptionStatus, { optional: true })) status?: SubscriptionStatus) {
     return this.subs.listAll(status);
   }
-  @Roles('ADMIN') @Post('assign')
+  @Permission('payments.confirm') @Post('assign')
   assign(@Body() dto: AdminAssignDto) { return this.subs.subscribe(dto.sellerId, dto.packageId, true); }
-  @Roles('ADMIN') @Post(':id/confirm-payment')
+  @Permission('payments.confirm') @Post(':id/confirm-payment')
   confirm(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() u: AuthUser, @Body() dto: ConfirmPaymentDto) {
     return this.subs.confirmPayment(id, u.id, dto);
   }
-  @Roles('ADMIN') @Post(':id/cancel')
+  @Permission('payments.confirm') @Post(':id/cancel')
   cancel(@Param('id', ParseUUIDPipe) id: string) { return this.subs.cancel(id); }
 }

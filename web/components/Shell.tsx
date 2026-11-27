@@ -5,7 +5,7 @@ import { ReactNode, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Spinner } from './ui';
 
-type Item = { href: string; label: string };
+type Item = { href: string; label: string; perm?: string };
 type Group = { title?: string; items: Item[] };
 
 const SELLER_NAV: Group[] = [
@@ -15,14 +15,15 @@ const SELLER_NAV: Group[] = [
 ];
 const ADMIN_NAV: Group[] = [
   { items: [{ href: '/admin', label: 'Dashboard' }] },
-  { title: 'Vendors', items: [{ href: '/admin/sellers', label: 'Sellers' }, { href: '/admin/payments', label: 'Subscriptions & payments' }] },
-  { title: 'Products', items: [{ href: '/admin/queue', label: 'Review queue' }, { href: '/admin/categories', label: 'Categories' }] },
-  { title: 'Settings', items: [{ href: '/admin/packages', label: 'Packages' }, { href: '/admin/bank', label: 'Bank details' }] },
+  { title: 'Vendors', items: [{ href: '/admin/sellers', label: 'Sellers', perm: 'sellers.view' }, { href: '/admin/payments', label: 'Subscriptions & payments', perm: 'payments.view' }] },
+  { title: 'Products', items: [{ href: '/admin/queue', label: 'Review queue', perm: 'products.review' }, { href: '/admin/categories', label: 'Categories', perm: 'categories.manage' }] },
+  { title: 'Settings', items: [{ href: '/admin/packages', label: 'Packages', perm: 'packages.manage' }, { href: '/admin/bank', label: 'Bank details', perm: 'bank.manage' }] },
+  { title: 'Staff', items: [{ href: '/admin/staff', label: 'Staff', perm: 'staff.manage' }, { href: '/admin/roles', label: 'Roles & permissions', perm: 'roles.manage' }] },
 ];
 
 /** Sidebar + top bar. Sends people to the login page, or to their own area, when they should not be here. */
 export default function Shell({ role, children }: { role: 'ADMIN' | 'SELLER'; children: ReactNode }) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, can } = useAuth();
   const router = useRouter();
   const path = usePathname();
 
@@ -33,7 +34,9 @@ export default function Shell({ role, children }: { role: 'ADMIN' | 'SELLER'; ch
   }, [user, loading, role, router]);
 
   if (loading || !user || user.role !== role) return <Spinner />;
-  const nav = role === 'ADMIN' ? ADMIN_NAV : SELLER_NAV;
+  const allNav = role === 'ADMIN' ? ADMIN_NAV : SELLER_NAV;
+  // Staff only see the screens their role allows. Empty groups disappear.
+  const nav = allNav.map((g) => ({ ...g, items: g.items.filter((it) => !it.perm || can(it.perm)) })).filter((g) => g.items.length);
   const active = (h: string) => (h === '/seller' || h === '/admin' ? path === h : path.startsWith(h));
 
   return (
@@ -59,7 +62,10 @@ export default function Shell({ role, children }: { role: 'ADMIN' | 'SELLER'; ch
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
           <span className="text-sm text-slate-500">{role === 'ADMIN' ? 'Administration' : 'Seller portal'}</span>
-          <button className="btn-secondary btn-sm" onClick={logout}>Log out</button>
+          <div className="flex items-center gap-3">
+            {role === 'ADMIN' && <span className="text-sm text-slate-500">{user.name || user.email} · {user.superAdmin ? 'Super admin' : user.staffRole}</span>}
+            <button className="btn-secondary btn-sm" onClick={logout}>Log out</button>
+          </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 p-6">{children}</main>
       </div>

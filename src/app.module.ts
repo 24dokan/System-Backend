@@ -13,11 +13,15 @@ import { ImportExportModule } from './import-export/import-export.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { JwtAuthGuard } from './common/jwt-auth.guard';
 import { RolesGuard } from './common/roles.guard';
+import { PermissionsModule } from './permissions/permissions.module';
+import { PermissionsGuard } from './permissions/permissions.guard';
+import { StaffModule } from './staff/staff.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    PermissionsModule,
     HealthModule,
     IdentityModule,
     SellersModule,
@@ -27,11 +31,13 @@ import { RolesGuard } from './common/roles.guard';
     MediaModule,
     ApprovalModule,
     ImportExportModule,
+    StaffModule,
   ],
   providers: [
-    // Order matters: authenticate first, then check roles.
+    // Order matters: authenticate first, then check roles, then check permissions.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
 })
 export class AppModule {}

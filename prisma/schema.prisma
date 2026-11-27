@@ -23,8 +23,12 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role
+  name         String?
   sellerId     String?
   seller       Seller?  @relation(fields: [sellerId], references: [id])
+  // Staff only: what this person may do. An ADMIN user with no role is a super admin (everything allowed).
+  staffRoleId  String?
+  staffRole    StaffRole? @relation(fields: [staffRoleId], references: [id])
   isActive     Boolean  @default(true)
   // 2FA hook for later
   twoFactorSecret  String?
@@ -33,6 +37,19 @@ model User {
   updatedAt    DateTime @updatedAt
 
   @@index([sellerId])
+  @@index([staffRoleId])
+}
+
+/// A named set of permissions for company staff. Permission keys are defined in src/permissions/permissions.ts.
+model StaffRole {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  permissions String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
 }
 
 enum SellerStatus {

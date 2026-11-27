@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { AuthUser, CurrentUser } from '../common/current-user.decorator';
-import { Roles } from '../common/roles.decorator';
+import { Roles, AdminPermission } from '../common/roles.decorator';
 import {
   CreateProductDto, GenerateSkusDto, ListProductsQuery, SetOptionsDto, SetProductFeaturesDto, SetProductMediaDto, UpdateProductDto, UpdateSkuDto,
 } from './dto/products.dto';
@@ -13,10 +13,10 @@ export class ProductsController {
   @Roles('SELLER') @Post()
   create(@CurrentUser() u: AuthUser, @Body() dto: CreateProductDto) { return this.products.create(u, dto); }
 
-  @Roles('SELLER', 'ADMIN') @Get()
+  @Roles('SELLER', 'ADMIN') @AdminPermission('products.view') @Get()
   list(@CurrentUser() u: AuthUser, @Query() q: ListProductsQuery) { return this.products.list(u, q); }
 
-  @Roles('SELLER', 'ADMIN') @Get(':id')
+  @Roles('SELLER', 'ADMIN') @AdminPermission('products.view') @Get(':id')
   get(@CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string) { return this.products.getVisible(u, id); }
 
   @Roles('SELLER') @Patch(':id')
