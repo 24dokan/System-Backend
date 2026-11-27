@@ -162,3 +162,24 @@ Moving to the cloud is a configuration change. Files already saved locally must 
 - A product can be saved and edited while its options are pending, but it cannot be **submitted for review** until every option and value on it is approved. CSV imports follow the same rule: products with unapproved options are saved as drafts, not sent for review.
 - Products keep their own copy of option names and values, so renaming a library entry later does not change existing products.
 - `prisma/seed.ts` adds a starter library (Size, Colour, Material). The lists are placeholders.
+
+## Inventory (Phase 1D)
+- Stock lives per variation, warehouse and shelf (`StockLevel`): `onHand`, `reserved`, `quarantine`, `inspection`. Sellable = onHand - reserved. Quarantine and inspection are never sellable.
+- `StockService` is the only code that changes stock. Each change runs inside the caller's transaction, is re-checked afterwards (nothing negative, reserved never above on hand) and writes an append-only `StockMovement`.
+- Warehouse staff and admins do the work. Sellers see their own stock read-only (`GET /stock/mine`).
+- Inbound shipments (`IN-0001`) are expected first, then counted on arrival: good units go on the shelf, damaged units to quarantine.
+- Marketplace updates: `MarketplaceSync` remembers the last quantity sent per variation. The pending list and CSV file are what staff upload to Shopee/Lazada/TikTok. Direct connections are a later phase.
+
+## Orders, fulfilment and returns (Phase 1B/1C)
+- An order reserves stock when it is created (one transaction per order, so a shortage on one bulk-imported order does not block the others). `StockAllocation` records which shelf each unit was set aside from; the pick list is built from it.
+- Statuses: TO_PACK, PACKED, WAITING_PICKUP, SHIPPED, CANCELLED. Every step is a guarded update so two people cannot move the same order twice.
+- Shipping removes the units from on hand and reserved. Cancelling before packing releases the reservation. Cancelling after packing puts the units in inspection and opens a return record per shelf. Shipped orders cannot be cancelled; use a return.
+- Returns (`R-2001`...) wait in inspection until staff choose: restock, damaged (quarantine) or seller check.
+- Bulk import has a "check" run and a "create" run. Rows with the same source and order_ref form one order. The same source + order number cannot be entered twice.
+- Sales reports use Malaysian days (UTC+8), ignore cancelled orders and can be exported as CSV.
+
+## Promotions, SEO, currency and language
+- Promotions: sellers create, staff with `promotions.review` approve. Percent (1-90) or fixed amount, on a product or one variation, with dates. The original price is never changed; `salePrice()` computes the discounted price. Overlapping promotions on the same product are refused.
+- SEO: slug, page title, page description and share image on products and sellers. Data and edit screens only; public pages come with the storefront phase. Suggestions are generated from the name and description.
+- Currency: each product has a `currency` (MYR now). `ExchangeRate` keeps a history of rates to MYR. No conversion is shown anywhere yet.
+- Language: web text sits in `web/lib/i18n/*.json` behind `t()`, not yet used by screens. Translated catalogue text (product, category, package names and descriptions) is stored in `Translation`. No language switcher yet.

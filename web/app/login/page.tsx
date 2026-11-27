@@ -1,5 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { AuthPage } from '@/components/AuthForm';
 import { useAction } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -22,6 +23,8 @@ export default function Login() {
   const router = useRouter();
   const { busy, run } = useAction();
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const go = async (fn: () => Promise<unknown>) => { if (await run(fn)) router.replace('/'); };
   const asAdmin = () => go(() => login(ADMIN.email, ADMIN.password));
   const asSeller = () => go(async () => {
@@ -38,6 +41,12 @@ export default function Login() {
         <button className="btn-primary w-full" disabled={busy} onClick={asAdmin}>{busy ? 'Opening…' : 'Open the back office (Administrator)'}</button>
         <button className="btn-secondary w-full" disabled={busy} onClick={asSeller}>{busy ? 'Opening…' : 'Open the seller portal (Demo Seller)'}</button>
       </div>
+      <form className="mt-6 space-y-3 border-t border-slate-200 pt-5" onSubmit={(e) => { e.preventDefault(); go(() => login(email.trim(), password)); }}>
+        <div className="text-sm font-medium text-slate-700">Staff sign in</div>
+        <input className="input" type="email" autoComplete="username" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className="input" type="password" autoComplete="current-password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <button className="btn-secondary w-full" disabled={busy || !email || !password}>Sign in</button>
+      </form>
     </AuthPage>
   );
 }
