@@ -11,6 +11,11 @@ export class SellersService {
     return this.prisma.seller.findMany({ where: { status }, orderBy: { createdAt: 'desc' }, include: { profile: { select: { completedAt: true } } } });
   }
 
+  /** Names only, for pickers on warehouse and order forms. */
+  options() {
+    return this.prisma.seller.findMany({ where: { status: 'APPROVED' }, select: { id: true, name: true }, orderBy: { name: 'asc' } });
+  }
+
   async get(id: string) {
     const seller = await this.prisma.seller.findUnique({ where: { id } });
     if (!seller) throw new NotFoundException('Seller not found');

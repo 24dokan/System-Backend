@@ -49,7 +49,7 @@ export default function Inbound() {
 
 function Create({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const { busy, run } = useAction();
-  const sellers = useLoad<any>(() => api('/api/sellers?pageSize=200'));
+  const sellers = useLoad<any>(() => api('/api/sellers/options'));
   const warehouses = useLoad<any[]>(() => api('/api/warehouses'));
   const [sellerId, setSellerId] = useState('');
   const [warehouseId, setWarehouseId] = useState('');

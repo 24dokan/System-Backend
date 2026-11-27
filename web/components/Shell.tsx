@@ -12,18 +12,23 @@ const SELLER_NAV: Group[] = [
   { items: [{ href: '/seller', label: 'Dashboard' }] },
   { title: 'Account', items: [{ href: '/seller/profile', label: 'Store profile' }, { href: '/seller/plan', label: 'Package & payment' }] },
   { title: 'Products', items: [{ href: '/seller/products', label: 'My products' }, { href: '/seller/import', label: 'Import / export' }] },
-  { title: 'Inventory', items: [{ href: '/seller/stock', label: 'My stock' }] },
+  { title: 'Orders & stock', items: [{ href: '/seller/orders', label: 'My orders' }, { href: '/seller/stock', label: 'My stock' }] },
 ];
 const ADMIN_NAV: Group[] = [
   { items: [{ href: '/admin', label: 'Dashboard' }] },
   { title: 'Vendors', items: [{ href: '/admin/sellers', label: 'Sellers', perm: 'sellers.view' }, { href: '/admin/payments', label: 'Subscriptions & payments', perm: 'payments.view' }] },
   { title: 'Products', items: [{ href: '/admin/queue', label: 'Review queue', perm: 'products.review' }, { href: '/admin/categories', label: 'Categories', perm: 'categories.manage' }, { href: '/admin/options', label: 'Option library', perm: 'options.manage' }] },
+  { title: 'Orders', items: [
+    { href: '/admin/orders', label: 'All orders', perm: 'orders.view' }, { href: '/admin/orders/new', label: 'Create order', perm: 'orders.manage' },
+    { href: '/admin/orders/import', label: 'Bulk import', perm: 'orders.manage' }, { href: '/admin/returns', label: 'Returns', perm: 'returns.manage' },
+  ] },
   { title: 'Inventory', items: [
     { href: '/admin/stock', label: 'Stock overview', perm: 'inventory.view' }, { href: '/admin/inbound', label: 'Inbound', perm: 'inventory.view' },
     { href: '/admin/adjustments', label: 'Adjustments', perm: 'inventory.manage' }, { href: '/admin/movements', label: 'Movements', perm: 'inventory.view' },
     { href: '/admin/low-stock', label: 'Low stock', perm: 'inventory.view' }, { href: '/admin/marketplace', label: 'Marketplace updates', perm: 'inventory.view' },
     { href: '/admin/warehouses', label: 'Warehouses', perm: 'warehouses.manage' },
   ] },
+  { title: 'Reports', items: [{ href: '/admin/reports', label: 'Sales reports', perm: 'reports.view' }] },
   { title: 'Settings', items: [{ href: '/admin/packages', label: 'Packages', perm: 'packages.manage' }, { href: '/admin/bank', label: 'Bank details', perm: 'bank.manage' }] },
   { title: 'Staff', items: [{ href: '/admin/staff', label: 'Staff', perm: 'staff.manage' }, { href: '/admin/roles', label: 'Roles & permissions', perm: 'roles.manage' }] },
 ];
@@ -44,7 +49,10 @@ export default function Shell({ role, children }: { role: 'ADMIN' | 'SELLER'; ch
   const allNav = role === 'ADMIN' ? ADMIN_NAV : SELLER_NAV;
   // Staff only see the screens their role allows. Empty groups disappear.
   const nav = allNav.map((g) => ({ ...g, items: g.items.filter((it) => !it.perm || can(it.perm)) })).filter((g) => g.items.length);
-  const active = (h: string) => (h === '/seller' || h === '/admin' ? path === h : path.startsWith(h));
+  // The longest matching link wins, so /admin/orders/new does not also light up /admin/orders.
+  const all = nav.flatMap((g) => g.items.map((i) => i.href));
+  const best = all.filter((h) => path === h || (h !== '/seller' && h !== '/admin' && path.startsWith(h + '/'))).sort((a, b) => b.length - a.length)[0];
+  const active = (h: string) => h === best;
 
   return (
     <div className="flex min-h-screen">

@@ -34,6 +34,12 @@ export class SellersController {
     return this.profiles.updateOwn(user.sellerId!, dto);
   }
 
+  /** Any staff member can pick a seller on a form. */
+  @Roles('ADMIN') @Get('options')
+  options() {
+    return this.sellers.options();
+  }
+
   @Permission('sellers.view') @Get(':id/profile')
   profileForStaff(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.profiles.getForStaff(user, id);
