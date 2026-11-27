@@ -16,6 +16,7 @@ import { RolesGuard } from './common/roles.guard';
 import { PermissionsModule } from './permissions/permissions.module';
 import { PermissionsGuard } from './permissions/permissions.guard';
 import { StaffModule } from './staff/staff.module';
+import { OptionsModule } from './options/options.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { StaffModule } from './staff/staff.module';
     ApprovalModule,
     ImportExportModule,
     StaffModule,
+    OptionsModule,
   ],
   providers: [
     // Order matters: authenticate first, then check roles, then check permissions.

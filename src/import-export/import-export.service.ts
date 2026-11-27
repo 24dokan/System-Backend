@@ -1,8 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { parse } from 'csv-parse/sync';
 import { AuthUser } from '../common/current-user.decorator';
+import { OptionsService } from '../options/options.service';
 import { LimitsService } from '../packages/limits.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { missingFields } from '../sellers/profile.rules';
 import { toCsv } from './csv.util';
 import {
   COLUMNS, MAX_ROWS, OPTION_SLOTS, ParsedProduct, REQUIRED_COLUMNS, RejectedGroup, buildProducts, makeCategoryResolver, suggestCode,
@@ -11,7 +13,7 @@ import {
 @Injectable()
 export class ImportExportService {
   private log = new Logger(ImportExportService.name);
-  constructor(private prisma: PrismaService, private limits: LimitsService) {}
+  constructor(private prisma: PrismaService, private limits: LimitsService, private optionLibrary: OptionsService) {}
 
   template() {
     // Build each row by column name so the cells always line up with the header.
@@ -32,6 +34,8 @@ export class ImportExportService {
     const sellerId = user.sellerId!;
     const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
     if (seller?.status !== 'APPROVED') throw new ForbiddenException('Your seller account must be approved first');
+    const profile = await this.prisma.sellerProfile.findUnique({ where: { sellerId } });
+    if (missingFields(profile).length) throw new ForbiddenException('Complete your store profile before importing products');
     // Fail fast when there is no active subscription, instead of rejecting every product one by one.
     await this.limits.assertCanAdd(sellerId, 0, 0);
 
@@ -52,12 +56,12 @@ export class ImportExportService {
     const categories = await this.prisma.category.findMany({ where: { isActive: true } });
     const { valid, rejected } = buildProducts(rows, makeCategoryResolver(categories));
 
-    const created: { key: string; productId: string; skuCount: number }[] = [];
+    const created: { key: string; productId: string; skuCount: number; draft: boolean }[] = [];
     for (const p of valid) {
       try {
         const reason = await this.createPending(sellerId, user.id, p);
         if (typeof reason === 'string') rejected.push({ key: p.key, rows: p.rows, errors: [reason] });
-        else created.push({ key: p.key, productId: reason.id, skuCount: p.skus.length });
+        else created.push({ key: p.key, productId: reason.id, skuCount: p.skus.length, draft: reason.draft });
       } catch (e) {
         if (e instanceof ForbiddenException) rejected.push({ key: p.key, rows: p.rows, errors: [e.message] });
         else {
@@ -69,6 +73,8 @@ export class ImportExportService {
     return {
       rows: rows.length,
       createdCount: created.length,
+      // Products that use options still waiting for approval are saved as drafts instead of being sent for review.
+      draftCount: created.filter((c) => c.draft).length,
       rejectedCount: rejected.length,
       created,
       rejected: rejected as RejectedGroup[],
@@ -76,7 +82,7 @@ export class ImportExportService {
   }
 
   /** Creates one imported product as PENDING. Returns the product, or a string explaining why it was refused. */
-  private async createPending(sellerId: string, actorId: string, p: ParsedProduct): Promise<{ id: string } | string> {
+  private async createPending(sellerId: string, actorId: string, p: ParsedProduct): Promise<{ id: string; draft: boolean } | string> {
     // Explicit codes must be free. Missing ones are generated and made unique.
     const explicit = p.skus.map((s) => s.code).filter((c): c is string => !!c);
     const taken = new Set((await this.prisma.sku.findMany({ where: { code: { in: explicit } }, select: { code: true } })).map((s) => s.code));
@@ -97,12 +103,22 @@ export class ImportExportService {
 
     await this.limits.assertCanAdd(sellerId, 1, p.skus.length); // throws ForbiddenException when over the limit
 
+    // Options must come from the library. New ones become requests, and the product waits as a draft.
+    let options: { name: string; values: string[] }[];
+    try {
+      options = await this.optionLibrary.resolve(sellerId, p.options);
+    } catch (e) {
+      if (e instanceof BadRequestException) return e.message;
+      throw e;
+    }
+    const draft = (await this.optionLibrary.unapproved(sellerId, options)).length > 0;
+
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
-          sellerId, categoryId: p.categoryId, name: p.name, description: p.description, status: 'PENDING',
+          sellerId, categoryId: p.categoryId, name: p.name, description: p.description, status: draft ? 'DRAFT' : 'PENDING',
           options: {
-            create: p.options.map((o, position) => ({
+            create: options.map((o, position) => ({
               name: o.name, position, values: { create: o.values.map((value, vp) => ({ value, position: vp })) },
             })),
           },
@@ -119,8 +135,8 @@ export class ImportExportService {
           },
         });
       }
-      await tx.approvalEvent.create({ data: { productId: product.id, action: 'SUBMIT', actorId, reason: 'CSV import' } });
-      return product;
+      if (!draft) await tx.approvalEvent.create({ data: { productId: product.id, action: 'SUBMIT', actorId, reason: 'CSV import' } });
+      return { id: product.id, draft };
     });
   }
 

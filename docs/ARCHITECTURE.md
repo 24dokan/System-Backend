@@ -154,3 +154,11 @@ Moving to the cloud is a configuration change. Files already saved locally must 
 - ID number and bank account number are shown masked to staff unless their role has `sellers.view_sensitive`. Each full view is recorded in `SellerProfileView`.
 - The drop-down choices (seller types, shopping systems, product counts) are placeholders in `profile.rules.ts` until the business confirms the lists.
 - Not yet built: supporting documents (e.g. company registration certificate), social links, and encrypting these two fields in the database.
+
+## Option library
+
+- Option names (Size, Colour) and values (S, M, Red) live in a shared library (`OptionDefinition`, `OptionDefinitionValue`). Admins with `options.manage` add entries and approve or decline seller requests.
+- When a seller saves product options, what they typed is matched (ignoring case and spaces) against the library and saved with the library's spelling. Anything not in the library becomes a PENDING request from that seller; options or values the team declined are refused with the reason.
+- A product can be saved and edited while its options are pending, but it cannot be **submitted for review** until every option and value on it is approved. CSV imports follow the same rule: products with unapproved options are saved as drafts, not sent for review.
+- Products keep their own copy of option names and values, so renaming a library entry later does not change existing products.
+- `prisma/seed.ts` adds a starter library (Size, Colour, Material). The lists are placeholders.

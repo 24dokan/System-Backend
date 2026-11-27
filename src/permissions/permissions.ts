@@ -13,6 +13,7 @@ export const PERMISSIONS = [
   { key: 'products.review', group: 'Products', label: 'Approve or reject products and edits' },
   { key: 'categories.manage', group: 'Catalogue', label: 'Manage categories' },
   { key: 'features.manage', group: 'Catalogue', label: 'Manage product features' },
+  { key: 'options.manage', group: 'Catalogue', label: 'Manage the option library and approve seller requests' },
   { key: 'packages.manage', group: 'Catalogue', label: 'Manage seller packages' },
   { key: 'bank.manage', group: 'Settings', label: 'Change bank transfer details' },
   { key: 'staff.manage', group: 'Staff', label: 'Add and manage staff accounts' },

@@ -8,12 +8,13 @@ export default function AdminDashboard() {
   const { can } = useAuth();
   const { data, loading } = useLoad(async () => {
     // Each number is fetched only if the person may see it.
-    const [sellers, subs, queue] = await Promise.all([
+    const [sellers, subs, queue, opts] = await Promise.all([
       can('sellers.view') ? api('/api/sellers?status=PENDING') : null,
       can('payments.view') ? api('/api/subscriptions?status=AWAITING_PAYMENT') : null,
       can('products.review') ? api('/api/approval/queue') : null,
+      can('options.manage') ? api('/api/admin/options/pending-count') : null,
     ]);
-    return { sellers: sellers?.length, payments: subs?.length, products: queue?.products.length, revisions: queue?.revisions.length };
+    return { sellers: sellers?.length, payments: subs?.length, products: queue?.products.length, revisions: queue?.revisions.length, options: opts?.count };
   });
   if (loading || !data) return <Spinner />;
   const tiles = [
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
     { label: 'Payments to confirm', n: data.payments, href: '/admin/payments' },
     { label: 'New products to review', n: data.products, href: '/admin/queue' },
     { label: 'Product changes to review', n: data.revisions, href: '/admin/queue' },
+    { label: 'Option requests', n: data.options, href: '/admin/options' },
   ].filter((t) => t.n !== undefined);
   return (
     <>

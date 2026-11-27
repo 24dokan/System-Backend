@@ -92,6 +92,18 @@ function Options({ p, editable, onSaved }: any) {
   const [rows, setRows] = useState<{ name: string; values: string }[]>(init);
   useEffect(() => setRows(init()), [p]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Options come from the shared library. Anything new is sent to the team as a request.
+  const lib = useLoad<any[]>(() => api('/api/options/library'), [p.id, p.updatedAt]);
+  const findDef = (name: string) => lib.data?.find((d) => d.name.toLowerCase() === name.trim().toLowerCase());
+  const statusOf = (r: { name: string; values: string }) => {
+    const d = findDef(r.name);
+    const vals = r.values.split(',').map((x) => x.trim()).filter(Boolean);
+    const waiting = !d ? (r.name.trim() ? [`${r.name.trim()} (new option)`] : []) : [
+      ...(d.status === 'PENDING' ? [`${d.name} (new option)`] : []),
+      ...vals.filter((v) => d.values.find((x: any) => x.value.toLowerCase() === v.toLowerCase())?.status !== 'APPROVED').map((v) => v),
+    ];
+    return waiting;
+  };
   const set = (i: number, k: 'name' | 'values', v: string) => setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
   const parsed = rows.filter((r) => r.name.trim()).map((r) => ({ name: r.name.trim(), values: r.values.split(',').map((x) => x.trim()).filter(Boolean) }));
   const save = async () => {
@@ -101,11 +113,15 @@ function Options({ p, editable, onSaved }: any) {
   return (
     <Card title="Options (e.g. Size, Colour)">
       {!editable && !rows.length && <Empty>This product has no options.</Empty>}
+      <datalist id="option-names">{lib.data?.map((d) => <option key={d.id} value={d.name} />)}</datalist>
       <div className="space-y-3">
         {rows.map((r, i) => (
           <div key={i} className="grid items-end gap-3 md:grid-cols-[200px_1fr_auto]">
-            <Field label="Option name"><input className="input" disabled={!editable} value={r.name} onChange={(e) => set(i, 'name', e.target.value)} placeholder="Size" /></Field>
-            <Field label="Values (comma separated)"><input className="input" disabled={!editable} value={r.values} onChange={(e) => set(i, 'values', e.target.value)} placeholder="S, M, L" /></Field>
+            <Field label="Option name"><input className="input" list="option-names" disabled={!editable} value={r.name} onChange={(e) => set(i, 'name', e.target.value)} placeholder="Size" /></Field>
+            <Field label="Values (comma separated)" hint={findDef(r.name) ? `Available: ${findDef(r.name).values.filter((v: any) => v.status === 'APPROVED').map((v: any) => v.value).join(', ') || 'none yet'}` : undefined}>
+              <input className="input" disabled={!editable} value={r.values} onChange={(e) => set(i, 'values', e.target.value)} placeholder="S, M, L" />
+              {statusOf(r).length > 0 && <span className="mt-1 block text-xs text-amber-700">Needs team approval: {statusOf(r).join(', ')}. Saving sends a request. You can submit the product once it is approved.</span>}
+            </Field>
             {editable && <button className="btn-secondary" onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</button>}
           </div>
         ))}

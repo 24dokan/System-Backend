@@ -16,7 +16,7 @@ const SELLER_NAV: Group[] = [
 const ADMIN_NAV: Group[] = [
   { items: [{ href: '/admin', label: 'Dashboard' }] },
   { title: 'Vendors', items: [{ href: '/admin/sellers', label: 'Sellers', perm: 'sellers.view' }, { href: '/admin/payments', label: 'Subscriptions & payments', perm: 'payments.view' }] },
-  { title: 'Products', items: [{ href: '/admin/queue', label: 'Review queue', perm: 'products.review' }, { href: '/admin/categories', label: 'Categories', perm: 'categories.manage' }] },
+  { title: 'Products', items: [{ href: '/admin/queue', label: 'Review queue', perm: 'products.review' }, { href: '/admin/categories', label: 'Categories', perm: 'categories.manage' }, { href: '/admin/options', label: 'Option library', perm: 'options.manage' }] },
   { title: 'Settings', items: [{ href: '/admin/packages', label: 'Packages', perm: 'packages.manage' }, { href: '/admin/bank', label: 'Bank details', perm: 'bank.manage' }] },
   { title: 'Staff', items: [{ href: '/admin/staff', label: 'Staff', perm: 'staff.manage' }, { href: '/admin/roles', label: 'Roles & permissions', perm: 'roles.manage' }] },
 ];

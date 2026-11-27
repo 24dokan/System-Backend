@@ -353,6 +353,44 @@ model SkuOptionValue {
   @@id([skuId, optionValueId])
 }
 
+// ---------- option library ----------
+// The shared list of option names (Size, Colour) and values (S, M, Red) that products use.
+// Admins define them; a seller who needs a new one files a request that an admin approves or rejects.
+
+enum LibraryStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+model OptionDefinition {
+  id                String        @id @default(uuid())
+  name              String
+  nameKey           String        @unique // lower-case, trimmed, for matching
+  status            LibraryStatus @default(APPROVED)
+  requestedBySellerId String?
+  rejectionReason   String?
+  createdAt         DateTime      @default(now())
+
+  values OptionDefinitionValue[]
+}
+
+model OptionDefinitionValue {
+  id                  String        @id @default(uuid())
+  definitionId        String
+  value               String
+  valueKey            String
+  position            Int           @default(0)
+  status              LibraryStatus @default(APPROVED)
+  requestedBySellerId String?
+  rejectionReason     String?
+  createdAt           DateTime      @default(now())
+
+  definition OptionDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@unique([definitionId, valueKey])
+}
+
 // ---------- media ----------
 
 enum MediaKind {

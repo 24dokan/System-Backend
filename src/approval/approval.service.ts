@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ApprovalAction, Prisma } from '@prisma/client';
 import { AuthUser } from '../common/current-user.decorator';
+import { OptionsService } from '../options/options.service';
 import { LimitsService } from '../packages/limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRevisionDto } from './dto/approval.dto';
@@ -11,7 +12,7 @@ type Tx = Prisma.TransactionClient;
 
 @Injectable()
 export class ApprovalService {
-  constructor(private prisma: PrismaService, private limits: LimitsService) {}
+  constructor(private prisma: PrismaService, private limits: LimitsService, private optionLibrary: OptionsService) {}
 
   private async getVisible(user: AuthUser, id: string) {
     const p = await this.prisma.product.findUnique({ where: { id }, include: { skus: true } });
@@ -47,6 +48,9 @@ export class ApprovalService {
       const shown = missing.slice(0, 4).join(', ') + (missing.length > 4 ? ` and ${missing.length - 4} more` : '');
       throw new BadRequestException(`Complete your store profile before submitting products. Still missing: ${shown}`);
     }
+    const options = await this.prisma.productOption.findMany({ where: { productId }, include: { values: true } });
+    const waiting = await this.optionLibrary.unapproved(p.sellerId, options.map((o) => ({ name: o.name, values: o.values.map((v) => v.value) })));
+    if (waiting.length) throw new BadRequestException(`Waiting for the team to approve: ${waiting.join('; ')}. You can submit once they are approved.`);
     if (!p.skus.length) throw new BadRequestException('Add at least one variation (SKU) before submitting');
     if (p.skus.some((s) => s.priceMinor <= 0)) throw new BadRequestException('Every SKU needs a price above zero');
 

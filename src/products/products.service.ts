@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from '@prisma/client';
 import { AuthUser } from '../common/current-user.decorator';
 import { slugify } from '../common/slugify';
+import { OptionsService } from '../options/options.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateProductDto, GenerateSkusDto, ListProductsQuery, SetOptionsDto, SetProductFeaturesDto, SetProductMediaDto, UpdateProductDto, UpdateSkuDto,
@@ -21,7 +22,7 @@ const DIRECTLY_EDITABLE = ['DRAFT', 'REJECTED'];
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private optionLibrary: OptionsService) {}
 
   // ---------- access ----------
 
@@ -135,6 +136,10 @@ export class ProductsService {
         throw new BadRequestException(`Option "${o.name}" has empty or duplicate values`);
       }
     }
+
+    // Use the library's spelling. Anything new becomes a request for the team to approve.
+    const resolved = await this.optionLibrary.resolve(user.sellerId!, dto.options.map((o) => ({ name: o.name.trim(), values: o.values.map((v) => v.trim()) })));
+    dto = { options: resolved } as SetOptionsDto;
 
     await this.prisma.$transaction(async (tx) => {
       const keepOptionIds = new Set<string>();

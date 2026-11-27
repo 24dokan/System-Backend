@@ -30,8 +30,29 @@ async function seedPackages() {
   }
   console.log('Packages ready');
 }
+// ---- starter option library (Admin can edit all of this afterwards) ----
+async function seedOptions() {
+  const starter: Record<string, string[]> = {
+    Size: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '30ml', '50ml', '100ml'],
+    Colour: ['Black', 'White', 'Grey', 'Red', 'Blue', 'Green', 'Yellow', 'Pink', 'Beige', 'Brown'],
+    Material: ['Cotton', 'Linen', 'Polyester', 'Leather'],
+  };
+  for (const [name, values] of Object.entries(starter)) {
+    const nameKey = name.toLowerCase();
+    const def = await prisma.optionDefinition.upsert({ where: { nameKey }, update: {}, create: { name, nameKey, status: 'APPROVED' } });
+    for (const [position, value] of values.entries()) {
+      const valueKey = value.toLowerCase();
+      await prisma.optionDefinitionValue.upsert({
+        where: { definitionId_valueKey: { definitionId: def.id, valueKey } },
+        update: {}, create: { definitionId: def.id, value, valueKey, position, status: 'APPROVED' },
+      });
+    }
+  }
+  console.log('Option library ready');
+}
 main()
   .then(seedPackages)
+  .then(seedOptions)
   .catch((e) => {
     console.error(e);
     process.exitCode = 1;

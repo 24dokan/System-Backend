@@ -39,8 +39,9 @@ export default function ImportPage() {
       {result && (
         <Card title={`Result: ${result.createdCount} created, ${result.rejectedCount} rejected (${result.rows} rows)`} className="mt-5">
           {result.created.length > 0 && (
-            <div className="mb-4"><div className="mb-1 text-sm font-medium text-emerald-700">Created (pending review)</div>
-              <ul className="text-sm">{result.created.map((c: any) => <li key={c.productId}>{c.key} — {c.skuCount} variation(s)</li>)}</ul></div>
+            <div className="mb-4"><div className="mb-1 text-sm font-medium text-emerald-700">Created</div>
+              <ul className="text-sm">{result.created.map((c: any) => <li key={c.productId}>{c.key} — {c.skuCount} variation(s) — {c.draft ? 'saved as a draft (waiting for new options to be approved)' : 'sent for review'}</li>)}</ul>
+              {result.draftCount > 0 && <p className="mt-2 text-xs text-slate-500">Drafts use options the team has not approved yet. Once approved, open each draft and submit it.</p>}</div>
           )}
           {result.rejected.length > 0 && (
             <div><div className="mb-1 text-sm font-medium text-red-700">Rejected</div>
