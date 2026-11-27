@@ -718,6 +718,7 @@ model ReturnRecord {
   skuId         String
   warehouseId   String
   qty           Int
+  location      String       @default("") // shelf the units are waiting on
   reason        String?
   status        ReturnStatus @default(TO_INSPECT)
   inspectionNote String?
