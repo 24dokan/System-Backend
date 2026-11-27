@@ -1,0 +1,16 @@
+{
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.search": "Search",
+  "common.previous": "Previous",
+  "common.next": "Next",
+  "orders.title": "Orders",
+  "orders.status.TO_PACK": "To pack",
+  "orders.status.PACKED": "Packed",
+  "orders.status.WAITING_PICKUP": "Waiting pickup",
+  "orders.status.SHIPPED": "Shipped",
+  "orders.status.CANCELLED": "Cancelled",
+  "stock.title": "Stock overview",
+  "stock.available": "Available",
+  "promotions.title": "Promotions"
+}

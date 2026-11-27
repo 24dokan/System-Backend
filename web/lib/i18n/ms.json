@@ -1,0 +1,16 @@
+{
+  "common.save": "Simpan",
+  "common.cancel": "Batal",
+  "common.search": "Cari",
+  "common.previous": "Sebelumnya",
+  "common.next": "Seterusnya",
+  "orders.title": "Pesanan",
+  "orders.status.TO_PACK": "Perlu dibungkus",
+  "orders.status.PACKED": "Dibungkus",
+  "orders.status.WAITING_PICKUP": "Menunggu pungutan",
+  "orders.status.SHIPPED": "Dihantar",
+  "orders.status.CANCELLED": "Dibatalkan",
+  "stock.title": "Gambaran stok",
+  "stock.available": "Tersedia",
+  "promotions.title": "Promosi"
+}

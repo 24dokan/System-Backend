@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Badge, Card, PageHeader, Spinner, StatusBadge, useLoad } from '@/components/ui';
+import SeoCard from '@/components/SeoCard';
+import { useAuth } from '@/lib/auth';
 
 const yn = (v: any) => (v === true ? 'Yes' : v === false ? 'No' : '—');
 const SECTIONS: [string, [string, string, boolean?][]][] = [
@@ -16,6 +18,7 @@ const SECTIONS: [string, [string, string, boolean?][]][] = [
 
 export default function SellerProfileView() {
   const { id } = useParams<{ id: string }>();
+  const { can } = useAuth();
   const { data, loading, error } = useLoad<any>(() => api(`/api/sellers/${id}/profile`), [id]);
   if (loading) return <Spinner />;
   if (error || !data) return <p className="text-red-600">{error || 'Not found'}</p>;
@@ -37,6 +40,7 @@ export default function SellerProfileView() {
             </dl>
           </Card>
         ))}
+        {can('seo.manage') && <SeoCard path={`/api/seo/sellers/${id}`} />}
       </div>
     </>
   );

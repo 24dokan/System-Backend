@@ -11,13 +11,13 @@ type Group = { title?: string; items: Item[] };
 const SELLER_NAV: Group[] = [
   { items: [{ href: '/seller', label: 'Dashboard' }] },
   { title: 'Account', items: [{ href: '/seller/profile', label: 'Store profile' }, { href: '/seller/plan', label: 'Package & payment' }] },
-  { title: 'Products', items: [{ href: '/seller/products', label: 'My products' }, { href: '/seller/import', label: 'Import / export' }] },
+  { title: 'Products', items: [{ href: '/seller/products', label: 'My products' }, { href: '/seller/promotions', label: 'Promotions' }, { href: '/seller/import', label: 'Import / export' }] },
   { title: 'Orders & stock', items: [{ href: '/seller/orders', label: 'My orders' }, { href: '/seller/stock', label: 'My stock' }] },
 ];
 const ADMIN_NAV: Group[] = [
   { items: [{ href: '/admin', label: 'Dashboard' }] },
   { title: 'Vendors', items: [{ href: '/admin/sellers', label: 'Sellers', perm: 'sellers.view' }, { href: '/admin/payments', label: 'Subscriptions & payments', perm: 'payments.view' }] },
-  { title: 'Products', items: [{ href: '/admin/queue', label: 'Review queue', perm: 'products.review' }, { href: '/admin/categories', label: 'Categories', perm: 'categories.manage' }, { href: '/admin/options', label: 'Option library', perm: 'options.manage' }] },
+  { title: 'Products', items: [{ href: '/admin/queue', label: 'Review queue', perm: 'products.review' }, { href: '/admin/categories', label: 'Categories', perm: 'categories.manage' }, { href: '/admin/options', label: 'Option library', perm: 'options.manage' }, { href: '/admin/promotions', label: 'Promotions', perm: 'promotions.review' }] },
   { title: 'Orders', items: [
     { href: '/admin/orders', label: 'All orders', perm: 'orders.view' }, { href: '/admin/orders/new', label: 'Create order', perm: 'orders.manage' },
     { href: '/admin/orders/import', label: 'Bulk import', perm: 'orders.manage' }, { href: '/admin/returns', label: 'Returns', perm: 'returns.manage' },

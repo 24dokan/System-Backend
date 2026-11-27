@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Card, Field, PageHeader, Spinner, useAction, useLoad } from '@/components/ui';
+import SeoCard from '@/components/SeoCard';
 
 type P = Record<string, any>;
 
@@ -107,6 +108,7 @@ export default function StoreProfile() {
           <Field label="E-invoice email *">{b.text('einvoiceEmail', { type: 'email' })}</Field>
         </div></Card>
         <div className="flex justify-end"><button className="btn-primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button></div>
+        <SeoCard path="/api/seo/store" />
       </div>
     </>
   );

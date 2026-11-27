@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { date, flattenCategories, fromMinor, money, toMinor } from '@/lib/format';
 import ProductMedia from '@/components/ProductMedia';
+import SeoCard from '@/components/SeoCard';
 import { Card, Empty, Field, Modal, PageHeader, Spinner, StatusBadge, useAction, useLoad } from '@/components/ui';
 
 const ACTION_LABEL: Record<string, string> = {
@@ -48,6 +49,7 @@ export default function ProductPage() {
         <ProductMedia p={p} editable={editable} onSaved={refresh} />
         <Options p={p} editable={editable} onSaved={refresh} />
         <Skus p={p} editable={editable} onSaved={refresh} />
+        <SeoCard path={`/api/seo/products/${id}`} images={(p.media ?? []).filter((m: any) => m.media?.kind === 'IMAGE').map((m: any, i: number) => ({ mediaId: m.mediaId, label: `Photo ${i + 1}` }))} />
         <Card title="History">
           {!history.data?.length ? <Empty>No decisions yet.</Empty> : (
             <ul className="space-y-2 text-sm">
