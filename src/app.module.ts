@@ -19,6 +19,10 @@ import { StaffModule } from './staff/staff.module';
 import { OptionsModule } from './options/options.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { OrdersModule } from './orders/orders.module';
+import { SeoModule } from './seo/seo.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { CurrencyModule } from './currency/currency.module';
+import { TranslationsModule } from './translations/translations.module';
 
 @Module({
   imports: [
@@ -38,6 +42,10 @@ import { OrdersModule } from './orders/orders.module';
     OptionsModule,
     InventoryModule,
     OrdersModule,
+    SeoModule,
+    PromotionsModule,
+    CurrencyModule,
+    TranslationsModule,
   ],
   providers: [
     // Order matters: authenticate first, then check roles, then check permissions.

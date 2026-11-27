@@ -24,6 +24,10 @@ export const PERMISSIONS = [
   { key: 'orders.cancel', group: 'Orders', label: 'Cancel orders' },
   { key: 'returns.manage', group: 'Orders', label: 'Record and inspect returns' },
   { key: 'reports.view', group: 'Reports', label: 'View sales reports' },
+  { key: 'promotions.review', group: 'Products', label: 'Approve or reject seller promotions' },
+  { key: 'seo.manage', group: 'Products', label: 'Edit search and sharing details of any product or seller' },
+  { key: 'currency.manage', group: 'Settings', label: 'Manage currencies and exchange rates' },
+  { key: 'translations.manage', group: 'Settings', label: 'Manage translations' },
   { key: 'staff.manage', group: 'Staff', label: 'Add and manage staff accounts' },
   { key: 'roles.manage', group: 'Staff', label: 'Create and edit roles' },
 ] as const;

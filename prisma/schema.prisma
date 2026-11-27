@@ -65,9 +65,13 @@ model Seller {
   slug      String       @unique
   status    SellerStatus @default(PENDING)
   logoMediaId String?
+  metaTitle   String?
+  metaDescription String?
+  shareImageMediaId String?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
+  promotions    Promotion[]
   profile       SellerProfile?
   orders        Order[]
   inbound       InboundShipment[]
@@ -278,6 +282,11 @@ model Product {
   categoryId  String
   name        String
   description String?
+  currency    String        @default("MYR") // currency the prices are entered in
+  seoSlug     String?       @unique
+  metaTitle   String?
+  metaDescription String?
+  shareImageMediaId String?
   status      ProductStatus @default(DRAFT)
   receivable  Boolean       @default(false) // set on approval, used by inventory (1D)
   createdAt   DateTime      @default(now())
@@ -289,6 +298,7 @@ model Product {
   skus      Sku[]
   features  ProductFeature[]
   media     ProductMedia[]
+  promotions Promotion[]
   revisions ProductRevision[]
   events    ApprovalEvent[]
 
@@ -733,4 +743,73 @@ model ReturnRecord {
   warehouse Warehouse  @relation(fields: [warehouseId], references: [id])
 
   @@index([status])
+}
+
+
+// ---------- promotions ----------
+
+enum PromotionType {
+  PERCENT // value = percent off, 1 to 90
+  FIXED   // value = amount off in sen
+}
+
+enum PromotionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// A discount on one product (all variations) or on a single variation. The original price is never changed.
+model Promotion {
+  id           String          @id @default(uuid())
+  sellerId     String
+  productId    String
+  skuId        String?         // empty = every variation of the product
+  name         String
+  type         PromotionType
+  value        Int
+  startsAt     DateTime
+  endsAt       DateTime
+  status       PromotionStatus @default(PENDING)
+  rejectReason String?
+  decidedById  String?
+  decidedAt    DateTime?
+  createdAt    DateTime        @default(now())
+
+  seller  Seller  @relation(fields: [sellerId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId, status])
+  @@index([productId, status])
+}
+
+// ---------- currency ----------
+
+/// How much of the base currency (MYR) one unit of `currency` is worth. Prices are stored in each product's own currency.
+model ExchangeRate {
+  id        String   @id @default(uuid())
+  currency  String   // for example SGD
+  rateToBase Decimal @db.Decimal(18, 8)
+  note      String?
+  createdById String?
+  createdAt DateTime @default(now())
+
+  @@index([currency, createdAt])
+}
+
+// ---------- language ----------
+
+/// Translated text for catalogue records. The original text stays in English on the record itself.
+model Translation {
+  id         String   @id @default(uuid())
+  entityType String   // product, category, package
+  entityId   String
+  field      String   // name, description, tagline
+  locale     String   // ms, zh, ...
+  text       String
+  updatedAt  DateTime @updatedAt
+
+  @@unique([entityType, entityId, field, locale])
+  @@index([entityType, entityId])
 }
