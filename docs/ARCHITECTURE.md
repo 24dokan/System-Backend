@@ -146,3 +146,11 @@ Moving to the cloud is a configuration change. Files already saved locally must 
 - Nobody can hand out a permission they do not hold themselves, and only a super admin can change another super admin. This stops staff from promoting themselves.
 - `GET /api/auth/me` returns `permissions` and `superAdmin` so the web app can hide screens. The backend enforces the same rules regardless.
 - Planned: a seller's ID number and bank details are only shown in full to roles with `sellers.view_sensitive` (arrives with the store profile).
+
+## Seller store profile
+
+- Sellers register with just brand name, email and password. After an administrator approves the account, a **Store profile** page opens with contact, company, bank, store, technical contact and e-invoicing details (table `SellerProfile`).
+- A seller cannot submit products for review until every required field is filled in (`src/sellers/profile.rules.ts` lists them). Products already approved are not affected.
+- ID number and bank account number are shown masked to staff unless their role has `sellers.view_sensitive`. Each full view is recorded in `SellerProfileView`.
+- The drop-down choices (seller types, shopping systems, product counts) are placeholders in `profile.rules.ts` until the business confirms the lists.
+- Not yet built: supporting documents (e.g. company registration certificate), social links, and encrypting these two fields in the database.

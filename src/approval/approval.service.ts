@@ -4,6 +4,7 @@ import { AuthUser } from '../common/current-user.decorator';
 import { LimitsService } from '../packages/limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRevisionDto } from './dto/approval.dto';
+import { missingFields } from '../sellers/profile.rules';
 import { Transition, nextStatus } from './transitions';
 
 type Tx = Prisma.TransactionClient;
@@ -40,6 +41,12 @@ export class ApprovalService {
     const p = await this.getVisible(user, productId);
     const seller = await this.prisma.seller.findUnique({ where: { id: p.sellerId } });
     if (seller?.status !== 'APPROVED') throw new ForbiddenException('Your seller account must be approved first');
+    const profile = await this.prisma.sellerProfile.findUnique({ where: { sellerId: p.sellerId } });
+    const missing = missingFields(profile);
+    if (missing.length) {
+      const shown = missing.slice(0, 4).join(', ') + (missing.length > 4 ? ` and ${missing.length - 4} more` : '');
+      throw new BadRequestException(`Complete your store profile before submitting products. Still missing: ${shown}`);
+    }
     if (!p.skus.length) throw new BadRequestException('Add at least one variation (SKU) before submitting');
     if (p.skus.some((s) => s.priceMinor <= 0)) throw new BadRequestException('Every SKU needs a price above zero');
 

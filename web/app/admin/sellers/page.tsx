@@ -1,8 +1,9 @@
 'use client';
+import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { date } from '@/lib/format';
-import { Card, Empty, PageHeader, Spinner, StatusBadge, useAction, useLoad } from '@/components/ui';
+import { Badge, Card, Empty, PageHeader, Spinner, StatusBadge, useAction, useLoad } from '@/components/ui';
 
 export default function Sellers() {
   const [status, setStatus] = useState('');
@@ -20,13 +21,16 @@ export default function Sellers() {
       <Card className="!p-0">
         {loading || !data ? <Spinner /> : !data.length ? <Empty>No sellers.</Empty> : (
           <table className="tbl">
-            <thead><tr><th>Brand</th><th>Status</th><th>Registered</th><th></th></tr></thead>
+            <thead><tr><th>Brand</th><th>Status</th><th>Profile</th><th>Registered</th><th></th></tr></thead>
             <tbody>
               {data.map((s: any) => (
                 <tr key={s.id}>
                   <td><div className="font-medium">{s.name}</div><div className="text-xs text-slate-400">{s.slug}</div></td>
-                  <td><StatusBadge status={s.status} /></td><td className="text-slate-500">{date(s.createdAt)}</td>
+                  <td><StatusBadge status={s.status} /></td>
+                  <td>{s.profile?.completedAt ? <Badge tone="green">Complete</Badge> : <Badge>{s.status === 'APPROVED' ? 'Incomplete' : 'Not started'}</Badge>}</td>
+                  <td className="text-slate-500">{date(s.createdAt)}</td>
                   <td className="text-right">
+                    <Link className="btn-secondary btn-sm mr-2" href={`/admin/sellers/${s.id}`}>Profile</Link>
                     {s.status !== 'APPROVED' && <button className="btn-primary btn-sm mr-2" disabled={busy} onClick={() => act(s.id, 'approve')}>Approve</button>}
                     {s.status !== 'SUSPENDED' && <button className="btn-secondary btn-sm" disabled={busy} onClick={() => act(s.id, 'suspend')}>Suspend</button>}
                   </td>

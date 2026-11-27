@@ -10,7 +10,7 @@ type Group = { title?: string; items: Item[] };
 
 const SELLER_NAV: Group[] = [
   { items: [{ href: '/seller', label: 'Dashboard' }] },
-  { title: 'Account', items: [{ href: '/seller/plan', label: 'Package & payment' }] },
+  { title: 'Account', items: [{ href: '/seller/profile', label: 'Store profile' }, { href: '/seller/plan', label: 'Package & payment' }] },
   { title: 'Products', items: [{ href: '/seller/products', label: 'My products' }, { href: '/seller/import', label: 'Import / export' }] },
 ];
 const ADMIN_NAV: Group[] = [

@@ -8,7 +8,7 @@ export class SellersService {
   constructor(private prisma: PrismaService, private subscriptions: SubscriptionsService) {}
 
   list(status?: SellerStatus) {
-    return this.prisma.seller.findMany({ where: { status }, orderBy: { createdAt: 'desc' } });
+    return this.prisma.seller.findMany({ where: { status }, orderBy: { createdAt: 'desc' }, include: { profile: { select: { completedAt: true } } } });
   }
 
   async get(id: string) {

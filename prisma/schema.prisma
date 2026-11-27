@@ -68,9 +68,74 @@ model Seller {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
+  profile       SellerProfile?
   users         User[]
   products      Product[]
   subscriptions Subscription[]
+}
+
+/// Company and store details a seller fills in after their account is approved.
+/// idNumber and bankAccountNumber are sensitive: staff see them masked unless their role allows it.
+model SellerProfile {
+  sellerId String @id
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // contact person
+  contactFirstName String?
+  contactLastName  String?
+  idNumber         String? // IC or passport number
+  contactEmail     String?
+  contactPhone     String?
+
+  // company
+  legalName      String?
+  sstNumber      String?
+  sellerType     String?
+  companyAddress String?
+  country        String?
+  state          String?
+  city           String?
+  postcode       String?
+  womanOwned     Boolean?
+  malaysianOwned Boolean?
+
+  // bank account
+  bankName          String?
+  bankAddress       String?
+  bankAccountName   String?
+  bankAccountNumber String?
+
+  // store
+  storeUrl          String?
+  productCategory   String?
+  productCountRange String?
+  stockedInMalaysia Boolean?
+  cartSystem        String?
+
+  // technical contact
+  techContactTitle  String?
+  techContactName   String?
+  techContactEmail  String?
+  techContactMobile String?
+
+  // e-invoicing
+  tinNumber          String?
+  einvoiceContactName String?
+  einvoiceEmail      String?
+
+  completedAt DateTime? // set while every required field is filled in
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+/// Who looked at a seller's full sensitive details, and when.
+model SellerProfileView {
+  id        String   @id @default(uuid())
+  sellerId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@index([sellerId])
 }
 
 // ---------- packages ----------
